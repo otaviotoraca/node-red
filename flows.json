@@ -1,5 +1,762 @@
 [
     {
+        "id": "2331ac266be0268e",
+        "type": "debug",
+        "z": "6f8195080fb39706",
+        "name": "debug 8",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 300,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "83adccf09a6abbe6",
+        "type": "mysql",
+        "z": "6f8195080fb39706",
+        "mydb": "5f30eccca47cdb5f",
+        "name": "",
+        "x": 340,
+        "y": 1780,
+        "wires": [
+            [
+                "8940dee23e12c76c"
+            ]
+        ]
+    },
+    {
+        "id": "8f6502a0a31be62d",
+        "type": "inject",
+        "z": "6f8195080fb39706",
+        "name": "DELETE ALL",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "TRUNCATE TABLE detect; TRUNCATE TABLE farms; TRUNCATE TABLE traps;",
+        "payload": "",
+        "payloadType": "date",
+        "x": 130,
+        "y": 1780,
+        "wires": [
+            [
+                "83adccf09a6abbe6"
+            ]
+        ]
+    },
+    {
+        "id": "8940dee23e12c76c",
+        "type": "debug",
+        "z": "6f8195080fb39706",
+        "name": "debug 14",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 480,
+        "y": 1780,
+        "wires": []
+    },
+    {
+        "id": "b75be850c4ff432f",
+        "type": "debug",
+        "z": "6f8195080fb39706",
+        "name": "debug 25",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 760,
+        "y": 560,
+        "wires": []
+    },
+    {
+        "id": "1e00483206e4e6d4",
+        "type": "group",
+        "z": "6f8195080fb39706",
+        "name": "Cadastrar  Fazendas",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "http-in",
+            "validate-data",
+            "mysql-insert",
+            "prepare-response",
+            "http-response",
+            "7eb979cd71b42098"
+        ],
+        "x": 34,
+        "y": 599,
+        "w": 972,
+        "h": 142
+    },
+    {
+        "id": "http-in",
+        "type": "http in",
+        "z": "6f8195080fb39706",
+        "g": "1e00483206e4e6d4",
+        "name": "POST /savefarm",
+        "url": "/savefarm",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 140,
+        "y": 660,
+        "wires": [
+            [
+                "validate-data",
+                "2331ac266be0268e"
+            ]
+        ]
+    },
+    {
+        "id": "validate-data",
+        "type": "function",
+        "z": "6f8195080fb39706",
+        "g": "1e00483206e4e6d4",
+        "name": "Validar e Formatar",
+        "func": "const req = msg.req;\nconst res = msg.res;\nglobal.set('req', req);\nglobal.set('res', res);\n\n\nif (!msg.payload.farmName || !msg.payload.ownerName) {\n    msg.statusCode = 400;\n    msg.payload = { status: 'error', message: 'Nome da fazenda e do proprietário são obrigatórios.' };\n    return [null, msg];\n}\n\nmsg.farmData = {\n    farmName: msg.payload.farmName.trim(),\n    ownerName: msg.payload.ownerName.trim()\n};\n\nmsg.topic = \"INSERT INTO farms (farmName, ownerName) VALUES (?, ?)\";\nmsg.payload = [msg.farmData.farmName, msg.farmData.ownerName];\n\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 660,
+        "wires": [
+            [
+                "mysql-insert"
+            ],
+            [
+                "http-response"
+            ]
+        ]
+    },
+    {
+        "id": "mysql-insert",
+        "type": "mysql",
+        "z": "6f8195080fb39706",
+        "g": "1e00483206e4e6d4",
+        "mydb": "5f30eccca47cdb5f",
+        "name": "Insert Farm",
+        "x": 550,
+        "y": 640,
+        "wires": [
+            [
+                "prepare-response",
+                "b75be850c4ff432f"
+            ]
+        ]
+    },
+    {
+        "id": "prepare-response",
+        "type": "function",
+        "z": "6f8195080fb39706",
+        "g": "1e00483206e4e6d4",
+        "name": "Preparar Resposta",
+        "func": "const req = global.get('req');\nconst res = global.get('res');\n\nif (msg.payload.affectedRows > 0) {\n    msg.statusCode = 201;\n    msg.req=req;\n    msg.res=res;\n    msg.payload = { status: 'success', message: 'Fazenda cadastrada com sucesso!' };\n} else {\n    msg.statusCode = 500;\n    msg.req=req;\n    msg.res=res;\n    msg.payload = { status: 'error', message: 'Erro ao cadastrar fazenda.' };\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 770,
+        "y": 640,
+        "wires": [
+            [
+                "http-response"
+            ]
+        ]
+    },
+    {
+        "id": "http-response",
+        "type": "http response",
+        "z": "6f8195080fb39706",
+        "g": "1e00483206e4e6d4",
+        "name": "",
+        "statusCode": "",
+        "headers": {
+            "content-type": "application/json"
+        },
+        "x": 930,
+        "y": 680,
+        "wires": []
+    },
+    {
+        "id": "7eb979cd71b42098",
+        "type": "catch",
+        "z": "6f8195080fb39706",
+        "g": "1e00483206e4e6d4",
+        "name": "Catch Errors",
+        "scope": [
+            "6e0ff581b926031c",
+            "mysql-insert"
+        ],
+        "uncaught": false,
+        "x": 550,
+        "y": 700,
+        "wires": [
+            [
+                "prepare-response"
+            ]
+        ]
+    },
+    {
+        "id": "ec6f5aba8062c16d",
+        "type": "group",
+        "z": "6f8195080fb39706",
+        "name": "Obter Imagem para Exibir",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "a1b2c3d4e5f67890",
+            "b2c3d4e5f67890a1",
+            "c3d4e5f67890a1b2",
+            "d4e5f67890a1b2c3",
+            "e5f67890a1b2c3d4",
+            "dfe2c3a5db8326a2",
+            "b31c428b9a0cb4af",
+            "a6682cfec0ea7f45",
+            "00f07aae6133e341",
+            "f19931a89ad67e0a",
+            "ca904e5e7a2b462b",
+            "cbe6a551b5b49262",
+            "ec0275f09ff38286",
+            "01b6c0a912e03257",
+            "aad4ff4f35b33c09",
+            "86db40fcd5d4c06e",
+            "652bcb92ab94d05f"
+        ],
+        "x": 34,
+        "y": 939,
+        "w": 1132,
+        "h": 202
+    },
+    {
+        "id": "a1b2c3d4e5f67890",
+        "type": "http in",
+        "z": "6f8195080fb39706",
+        "g": "ec6f5aba8062c16d",
+        "name": "Get Image",
+        "url": "/getImage",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 120,
+        "y": 1020,
+        "wires": [
+            [
+                "b2c3d4e5f67890a1"
+            ]
+        ]
+    },
+    {
+        "id": "b2c3d4e5f67890a1",
+        "type": "function",
+        "z": "6f8195080fb39706",
+        "g": "ec6f5aba8062c16d",
+        "name": "Definir Consulta SQL Imagem",
+        "func": "// Após a consulta SQL para obter a imagem\nmsg.topic = \"SELECT objectCount, image_url FROM detect WHERE farmName = ? AND trapCode = ?\";\nmsg.payload = [msg.req.query.farm, msg.req.query.trap];\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 1020,
+        "wires": [
+            [
+                "c3d4e5f67890a1b2"
+            ]
+        ]
+    },
+    {
+        "id": "c3d4e5f67890a1b2",
+        "type": "mysql",
+        "z": "6f8195080fb39706",
+        "g": "ec6f5aba8062c16d",
+        "mydb": "5f30eccca47cdb5f",
+        "name": "Consulta Imagem",
+        "x": 570,
+        "y": 1020,
+        "wires": [
+            [
+                "652bcb92ab94d05f"
+            ]
+        ]
+    },
+    {
+        "id": "d4e5f67890a1b2c3",
+        "type": "function",
+        "z": "6f8195080fb39706",
+        "g": "ec6f5aba8062c16d",
+        "name": "Formatar Imagem",
+        "func": "if (msg.payload.length > 0) {\n    msg.payload = {\n        objectCount: msg.originalPayload[0].objectCount,\n        image: msg.payload\n    };\n} else {\n    msg.payload = { objectCount: null, image: null };\n}\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 950,
+        "y": 1020,
+        "wires": [
+            [
+                "e5f67890a1b2c3d4"
+            ]
+        ]
+    },
+    {
+        "id": "e5f67890a1b2c3d4",
+        "type": "http response",
+        "z": "6f8195080fb39706",
+        "g": "ec6f5aba8062c16d",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 1090,
+        "y": 1020,
+        "wires": []
+    },
+    {
+        "id": "dfe2c3a5db8326a2",
+        "type": "http in",
+        "z": "6f8195080fb39706",
+        "g": "ec6f5aba8062c16d",
+        "name": "Get Farms",
+        "url": "/farms2",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 120,
+        "y": 1060,
+        "wires": [
+            [
+                "f19931a89ad67e0a"
+            ]
+        ]
+    },
+    {
+        "id": "b31c428b9a0cb4af",
+        "type": "mysql",
+        "z": "6f8195080fb39706",
+        "g": "ec6f5aba8062c16d",
+        "mydb": "5f30eccca47cdb5f",
+        "name": "Consulta Fazendas",
+        "x": 570,
+        "y": 1060,
+        "wires": [
+            [
+                "a6682cfec0ea7f45"
+            ]
+        ]
+    },
+    {
+        "id": "a6682cfec0ea7f45",
+        "type": "function",
+        "z": "6f8195080fb39706",
+        "g": "ec6f5aba8062c16d",
+        "name": "Formatar Dados",
+        "func": "let farms = msg.payload.map(farm => ({ farmName: farm.farmName }));\n\nmsg.payload = farms;\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 1060,
+        "wires": [
+            [
+                "00f07aae6133e341"
+            ]
+        ]
+    },
+    {
+        "id": "00f07aae6133e341",
+        "type": "http response",
+        "z": "6f8195080fb39706",
+        "g": "ec6f5aba8062c16d",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 970,
+        "y": 1060,
+        "wires": []
+    },
+    {
+        "id": "f19931a89ad67e0a",
+        "type": "function",
+        "z": "6f8195080fb39706",
+        "g": "ec6f5aba8062c16d",
+        "name": "Definir Consulta SQL",
+        "func": "msg.topic = \"SELECT DISTINCT farmName FROM detect\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 1060,
+        "wires": [
+            [
+                "b31c428b9a0cb4af"
+            ]
+        ]
+    },
+    {
+        "id": "ca904e5e7a2b462b",
+        "type": "http in",
+        "z": "6f8195080fb39706",
+        "g": "ec6f5aba8062c16d",
+        "name": "Get Trap",
+        "url": "/trapcodes2/:farmName",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 120,
+        "y": 1100,
+        "wires": [
+            [
+                "aad4ff4f35b33c09"
+            ]
+        ]
+    },
+    {
+        "id": "cbe6a551b5b49262",
+        "type": "mysql",
+        "z": "6f8195080fb39706",
+        "g": "ec6f5aba8062c16d",
+        "mydb": "5f30eccca47cdb5f",
+        "name": "Consulta Traps",
+        "x": 560,
+        "y": 1100,
+        "wires": [
+            [
+                "ec0275f09ff38286"
+            ]
+        ]
+    },
+    {
+        "id": "ec0275f09ff38286",
+        "type": "function",
+        "z": "6f8195080fb39706",
+        "g": "ec6f5aba8062c16d",
+        "name": "Formatar Traps",
+        "func": "let traps = msg.payload.map(trap => ({ trapCode: trap.trapCode })); // Atualizado de areaName para trapName\n\nmsg.payload = traps;\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 1100,
+        "wires": [
+            [
+                "01b6c0a912e03257"
+            ]
+        ]
+    },
+    {
+        "id": "01b6c0a912e03257",
+        "type": "http response",
+        "z": "6f8195080fb39706",
+        "g": "ec6f5aba8062c16d",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 970,
+        "y": 1100,
+        "wires": []
+    },
+    {
+        "id": "aad4ff4f35b33c09",
+        "type": "function",
+        "z": "6f8195080fb39706",
+        "g": "ec6f5aba8062c16d",
+        "name": "Definir Consulta SQL",
+        "func": "msg.topic = \"SELECT DISTINCT trapCode FROM detect WHERE TRIM(farmName) = ?\";\nmsg.payload = [msg.req.params.farmName.trim()]; // Adiciona trim() ao farmName\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 1100,
+        "wires": [
+            [
+                "cbe6a551b5b49262"
+            ]
+        ]
+    },
+    {
+        "id": "86db40fcd5d4c06e",
+        "type": "file in",
+        "z": "6f8195080fb39706",
+        "g": "ec6f5aba8062c16d",
+        "name": "",
+        "filename": "filename",
+        "filenameType": "msg",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "base64",
+        "allProps": false,
+        "x": 770,
+        "y": 1020,
+        "wires": [
+            [
+                "d4e5f67890a1b2c3"
+            ]
+        ]
+    },
+    {
+        "id": "652bcb92ab94d05f",
+        "type": "function",
+        "z": "6f8195080fb39706",
+        "g": "ec6f5aba8062c16d",
+        "name": "Preparar Caminho da Imagem",
+        "func": "if (msg.payload.length > 0) {\n    // Preserva os dados originais\n    msg.originalPayload = msg.payload;\n    \n    // Define o caminho da imagem baseado no URL do banco\n    msg.filename = '/home/otavio/.node-red/public'+ msg.payload[0].image_url;\n    \n    // Se o caminho não começar com '/', adiciona\n    if (!msg.filename.startsWith('/')) {\n        msg.filename = '/' + msg.filename;\n    }\n    \n    // Você pode adicionar um diretório base se necessário\n    // msg.filename = '/caminho/base' + msg.filename;\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 670,
+        "y": 980,
+        "wires": [
+            [
+                "86db40fcd5d4c06e"
+            ]
+        ]
+    },
+    {
+        "id": "729e980aba9900df",
+        "type": "group",
+        "z": "6f8195080fb39706",
+        "name": "Cadastra Traps",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "5aaed931d95290bf",
+            "d1c2b3d8622de694",
+            "6e0ff581b926031c",
+            "043dc6896bd8c961",
+            "be0e8671a95e15fb",
+            "8b03040d8ca90759"
+        ],
+        "x": 34,
+        "y": 779,
+        "w": 972,
+        "h": 142
+    },
+    {
+        "id": "5aaed931d95290bf",
+        "type": "http in",
+        "z": "6f8195080fb39706",
+        "g": "729e980aba9900df",
+        "name": "",
+        "url": "/savetraps",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 140,
+        "y": 820,
+        "wires": [
+            [
+                "d1c2b3d8622de694"
+            ]
+        ]
+    },
+    {
+        "id": "d1c2b3d8622de694",
+        "type": "function",
+        "z": "6f8195080fb39706",
+        "g": "729e980aba9900df",
+        "name": "Validar e Formatar",
+        "func": "if (!msg.payload.farmName || !msg.payload.trapCodes || !Array.isArray(msg.payload.trapCodes) || msg.payload.trapCodes.length === 0) {\n    msg.statusCode = 400;\n    msg.payload = { status: 'error', message: 'Nome da fazenda e uma lista de códigos de armadilhas são obrigatórios.' };\n    return [null, msg];\n}\n\nmsg.inserts = msg.payload.trapCodes.map(trapCode => {\n    return [msg.payload.farmName.trim(), trapCode.trim()];\n});\n\nmsg.topic = \"INSERT INTO traps (farmName, trapCode) VALUES ?\";\nmsg.payload = [msg.inserts];\n\nreturn [msg, null];\n",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 820,
+        "wires": [
+            [
+                "6e0ff581b926031c"
+            ],
+            [
+                "be0e8671a95e15fb"
+            ]
+        ]
+    },
+    {
+        "id": "6e0ff581b926031c",
+        "type": "mysql",
+        "z": "6f8195080fb39706",
+        "g": "729e980aba9900df",
+        "mydb": "5f30eccca47cdb5f",
+        "name": "Insert Trap",
+        "x": 570,
+        "y": 820,
+        "wires": [
+            [
+                "043dc6896bd8c961"
+            ]
+        ]
+    },
+    {
+        "id": "043dc6896bd8c961",
+        "type": "function",
+        "z": "6f8195080fb39706",
+        "g": "729e980aba9900df",
+        "name": "Enviar Resposta",
+        "func": "if (msg.error) {\n    if (msg.error.message.includes('Duplicate entry')) {\n        msg.statusCode = 409; // Conflict\n        msg.payload = { status: 'error', message: 'Armadilha já cadastrada.' };\n    } else {\n        msg.statusCode = 500; // Internal Server Error\n        msg.payload = { status: 'error', message: 'Erro ao cadastrar armadilha.' };\n    }\n} else if (msg.payload.affectedRows > 0) {\n    msg.statusCode = 200;\n    msg.payload = { status: 'success', message: 'Armadilha cadastrada com sucesso!' };\n} else {\n    msg.statusCode = 500;\n    msg.payload = { status: 'error', message: 'Erro ao cadastrar armadilha.' };\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 760,
+        "y": 820,
+        "wires": [
+            [
+                "be0e8671a95e15fb"
+            ]
+        ]
+    },
+    {
+        "id": "be0e8671a95e15fb",
+        "type": "http response",
+        "z": "6f8195080fb39706",
+        "g": "729e980aba9900df",
+        "name": "",
+        "statusCode": "",
+        "headers": {
+            "content-type": "application/json"
+        },
+        "x": 930,
+        "y": 820,
+        "wires": []
+    },
+    {
+        "id": "8b03040d8ca90759",
+        "type": "catch",
+        "z": "6f8195080fb39706",
+        "g": "729e980aba9900df",
+        "name": "Catch Errors",
+        "scope": [
+            "6e0ff581b926031c"
+        ],
+        "uncaught": false,
+        "x": 590,
+        "y": 880,
+        "wires": [
+            [
+                "043dc6896bd8c961"
+            ]
+        ]
+    },
+    {
+        "id": "aa4d99b19171a824",
+        "type": "group",
+        "z": "6f8195080fb39706",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "c4b1d3e0.81fca",
+            "b95e8b1d.0b9f68",
+            "1d8e73a2.b9202a",
+            "c4b1d3e0.81fcb",
+            "b95e8b1d.0b9f69",
+            "1d8e73a2.b9202b",
+            "b95e8b1d.0b9f70",
+            "1d8e73a2.b9202c",
+            "a7cf7bdac66aa25c",
+            "7b6822c70ff317f9",
+            "083f35a25823fd31",
+            "97f62a6653338588",
+            "c4666c106fab0368",
+            "8f145ec335849772",
+            "191523927bbba83a",
+            "http_in_node_farm_js",
+            "file_in_node_farm_js",
+            "http_response_node_farm_js",
+            "f6869b6389513af7",
+            "4789970c191853cc",
+            "3a7f79d29f5514d8",
+            "b0ece0c22cc7543d",
+            "8be8db0da7102644",
+            "1b20921297a56091",
+            "261708ec8e9b2dcd",
+            "6878f35a847acc02",
+            "df0d9c88299a3895",
+            "94f9b79ded668db4",
+            "4f425497b12b9ab8",
+            "63d869e99e9a59ad",
+            "95beedd35d02f5cb",
+            "9f34bd8a17acfc26",
+            "e7e9a7e09038a03f",
+            "eb8ba744b5d4a70f",
+            "b5f2dfae439ad420",
+            "f309c8d37bd67844",
+            "c090ca8a1150d5f6",
+            "b375cc3efcc1cb1b",
+            "e14e0becd8d63271",
+            "a7738f180f9bb8c5",
+            "47877b7a9c1b3dce",
+            "5fbc05500cbf502c",
+            "2f138041e43f2dee",
+            "7310813d713c9057",
+            "c9f6e3186523ff58",
+            "e23fedbd74032150"
+        ],
+        "x": 294,
+        "y": -21,
+        "w": 1552,
+        "h": 482
+    },
+    {
         "id": "c4b1d3e0.81fca",
         "type": "http in",
         "z": "6f8195080fb39706",
@@ -760,38 +1517,6 @@
         "wires": []
     },
     {
-        "id": "2331ac266be0268e",
-        "type": "debug",
-        "z": "6f8195080fb39706",
-        "name": "debug 8",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 300,
-        "y": 540,
-        "wires": []
-    },
-    {
-        "id": "b75be850c4ff432f",
-        "type": "debug",
-        "z": "6f8195080fb39706",
-        "name": "debug 25",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 760,
-        "y": 560,
-        "wires": []
-    },
-    {
         "id": "e23fedbd74032150",
         "type": "debug",
         "z": "6f8195080fb39706",
@@ -809,614 +1534,21 @@
         "wires": []
     },
     {
-        "id": "1e00483206e4e6d4",
+        "id": "02b6a79e5113270c",
         "type": "group",
         "z": "6f8195080fb39706",
-        "name": "Cadastrar  Fazendas",
+        "name": "Tirar Foto",
         "style": {
             "label": true
         },
         "nodes": [
-            "http-in",
-            "validate-data",
-            "mysql-insert",
-            "prepare-response",
-            "http-response",
-            "7eb979cd71b42098"
+            "1d046ba346aea790",
+            "5a02a451e146d677"
         ],
-        "x": 34,
-        "y": 599,
-        "w": 972,
-        "h": 142
-    },
-    {
-        "id": "http-in",
-        "type": "http in",
-        "z": "6f8195080fb39706",
-        "g": "1e00483206e4e6d4",
-        "name": "POST /savefarm",
-        "url": "/savefarm",
-        "method": "post",
-        "upload": false,
-        "swaggerDoc": "",
-        "x": 140,
-        "y": 660,
-        "wires": [
-            [
-                "validate-data",
-                "2331ac266be0268e"
-            ]
-        ]
-    },
-    {
-        "id": "validate-data",
-        "type": "function",
-        "z": "6f8195080fb39706",
-        "g": "1e00483206e4e6d4",
-        "name": "Validar e Formatar",
-        "func": "const req = msg.req;\nconst res = msg.res;\nglobal.set('req', req);\nglobal.set('res', res);\n\n\nif (!msg.payload.farmName || !msg.payload.ownerName) {\n    msg.statusCode = 400;\n    msg.payload = { status: 'error', message: 'Nome da fazenda e do proprietário são obrigatórios.' };\n    return [null, msg];\n}\n\nmsg.farmData = {\n    farmName: msg.payload.farmName.trim(),\n    ownerName: msg.payload.ownerName.trim()\n};\n\nmsg.topic = \"INSERT INTO farms (farmName, ownerName) VALUES (?, ?)\";\nmsg.payload = [msg.farmData.farmName, msg.farmData.ownerName];\n\nreturn [msg, null];",
-        "outputs": 2,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 350,
-        "y": 660,
-        "wires": [
-            [
-                "mysql-insert"
-            ],
-            [
-                "http-response"
-            ]
-        ]
-    },
-    {
-        "id": "mysql-insert",
-        "type": "mysql",
-        "z": "6f8195080fb39706",
-        "g": "1e00483206e4e6d4",
-        "mydb": "5f30eccca47cdb5f",
-        "name": "Insert Farm",
-        "x": 550,
-        "y": 640,
-        "wires": [
-            [
-                "prepare-response",
-                "b75be850c4ff432f"
-            ]
-        ]
-    },
-    {
-        "id": "prepare-response",
-        "type": "function",
-        "z": "6f8195080fb39706",
-        "g": "1e00483206e4e6d4",
-        "name": "Preparar Resposta",
-        "func": "const req = global.get('req');\nconst res = global.get('res');\n\nif (msg.payload.affectedRows > 0) {\n    msg.statusCode = 201;\n    msg.req=req;\n    msg.res=res;\n    msg.payload = { status: 'success', message: 'Fazenda cadastrada com sucesso!' };\n} else {\n    msg.statusCode = 500;\n    msg.req=req;\n    msg.res=res;\n    msg.payload = { status: 'error', message: 'Erro ao cadastrar fazenda.' };\n}\n\nreturn msg;",
-        "outputs": 1,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 770,
-        "y": 640,
-        "wires": [
-            [
-                "http-response"
-            ]
-        ]
-    },
-    {
-        "id": "http-response",
-        "type": "http response",
-        "z": "6f8195080fb39706",
-        "g": "1e00483206e4e6d4",
-        "name": "",
-        "statusCode": "",
-        "headers": {
-            "content-type": "application/json"
-        },
-        "x": 930,
-        "y": 680,
-        "wires": []
-    },
-    {
-        "id": "7eb979cd71b42098",
-        "type": "catch",
-        "z": "6f8195080fb39706",
-        "g": "1e00483206e4e6d4",
-        "name": "Catch Errors",
-        "scope": [
-            "6e0ff581b926031c",
-            "mysql-insert"
-        ],
-        "uncaught": false,
-        "x": 550,
-        "y": 700,
-        "wires": [
-            [
-                "prepare-response"
-            ]
-        ]
-    },
-    {
-        "id": "5f30eccca47cdb5f",
-        "type": "MySQLdatabase",
-        "name": "",
-        "host": "localhost",
-        "port": "3306",
-        "db": "farm_db",
-        "tz": "",
-        "charset": "UTF8"
-    },
-    {
-        "id": "ec6f5aba8062c16d",
-        "type": "group",
-        "z": "6f8195080fb39706",
-        "name": "Obter Imagem para Exibir",
-        "style": {
-            "label": true
-        },
-        "nodes": [
-            "a1b2c3d4e5f67890",
-            "b2c3d4e5f67890a1",
-            "c3d4e5f67890a1b2",
-            "d4e5f67890a1b2c3",
-            "e5f67890a1b2c3d4",
-            "dfe2c3a5db8326a2",
-            "b31c428b9a0cb4af",
-            "a6682cfec0ea7f45",
-            "00f07aae6133e341",
-            "f19931a89ad67e0a",
-            "ca904e5e7a2b462b",
-            "cbe6a551b5b49262",
-            "ec0275f09ff38286",
-            "01b6c0a912e03257",
-            "aad4ff4f35b33c09",
-            "86db40fcd5d4c06e",
-            "652bcb92ab94d05f"
-        ],
-        "x": 34,
-        "y": 939,
-        "w": 1132,
-        "h": 202
-    },
-    {
-        "id": "a1b2c3d4e5f67890",
-        "type": "http in",
-        "z": "6f8195080fb39706",
-        "g": "ec6f5aba8062c16d",
-        "name": "Get Image",
-        "url": "/getImage",
-        "method": "get",
-        "upload": false,
-        "swaggerDoc": "",
-        "x": 120,
-        "y": 1020,
-        "wires": [
-            [
-                "b2c3d4e5f67890a1"
-            ]
-        ]
-    },
-    {
-        "id": "b2c3d4e5f67890a1",
-        "type": "function",
-        "z": "6f8195080fb39706",
-        "g": "ec6f5aba8062c16d",
-        "name": "Definir Consulta SQL Imagem",
-        "func": "// Após a consulta SQL para obter a imagem\nmsg.topic = \"SELECT objectCount, image_url FROM detect WHERE farmName = ? AND trapCode = ?\";\nmsg.payload = [msg.req.query.farm, msg.req.query.trap];\nreturn msg;\n",
-        "outputs": 1,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 330,
-        "y": 1020,
-        "wires": [
-            [
-                "c3d4e5f67890a1b2"
-            ]
-        ]
-    },
-    {
-        "id": "c3d4e5f67890a1b2",
-        "type": "mysql",
-        "z": "6f8195080fb39706",
-        "g": "ec6f5aba8062c16d",
-        "mydb": "5f30eccca47cdb5f",
-        "name": "Consulta Imagem",
-        "x": 570,
-        "y": 1020,
-        "wires": [
-            [
-                "652bcb92ab94d05f"
-            ]
-        ]
-    },
-    {
-        "id": "d4e5f67890a1b2c3",
-        "type": "function",
-        "z": "6f8195080fb39706",
-        "g": "ec6f5aba8062c16d",
-        "name": "Formatar Imagem",
-        "func": "if (msg.payload.length > 0) {\n    msg.payload = {\n        objectCount: msg.originalPayload[0].objectCount,\n        image: msg.payload\n    };\n} else {\n    msg.payload = { objectCount: null, image: null };\n}\nreturn msg;\n",
-        "outputs": 1,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 950,
-        "y": 1020,
-        "wires": [
-            [
-                "e5f67890a1b2c3d4"
-            ]
-        ]
-    },
-    {
-        "id": "e5f67890a1b2c3d4",
-        "type": "http response",
-        "z": "6f8195080fb39706",
-        "g": "ec6f5aba8062c16d",
-        "name": "",
-        "statusCode": "",
-        "headers": {},
-        "x": 1090,
-        "y": 1020,
-        "wires": []
-    },
-    {
-        "id": "dfe2c3a5db8326a2",
-        "type": "http in",
-        "z": "6f8195080fb39706",
-        "g": "ec6f5aba8062c16d",
-        "name": "Get Farms",
-        "url": "/farms2",
-        "method": "get",
-        "upload": false,
-        "swaggerDoc": "",
-        "x": 120,
-        "y": 1060,
-        "wires": [
-            [
-                "f19931a89ad67e0a"
-            ]
-        ]
-    },
-    {
-        "id": "b31c428b9a0cb4af",
-        "type": "mysql",
-        "z": "6f8195080fb39706",
-        "g": "ec6f5aba8062c16d",
-        "mydb": "5f30eccca47cdb5f",
-        "name": "Consulta Fazendas",
-        "x": 570,
-        "y": 1060,
-        "wires": [
-            [
-                "a6682cfec0ea7f45"
-            ]
-        ]
-    },
-    {
-        "id": "a6682cfec0ea7f45",
-        "type": "function",
-        "z": "6f8195080fb39706",
-        "g": "ec6f5aba8062c16d",
-        "name": "Formatar Dados",
-        "func": "let farms = msg.payload.map(farm => ({ farmName: farm.farmName }));\n\nmsg.payload = farms;\nreturn msg;\n",
-        "outputs": 1,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 780,
-        "y": 1060,
-        "wires": [
-            [
-                "00f07aae6133e341"
-            ]
-        ]
-    },
-    {
-        "id": "00f07aae6133e341",
-        "type": "http response",
-        "z": "6f8195080fb39706",
-        "g": "ec6f5aba8062c16d",
-        "name": "",
-        "statusCode": "",
-        "headers": {},
-        "x": 970,
-        "y": 1060,
-        "wires": []
-    },
-    {
-        "id": "f19931a89ad67e0a",
-        "type": "function",
-        "z": "6f8195080fb39706",
-        "g": "ec6f5aba8062c16d",
-        "name": "Definir Consulta SQL",
-        "func": "msg.topic = \"SELECT DISTINCT farmName FROM detect\";\nreturn msg;",
-        "outputs": 1,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 340,
-        "y": 1060,
-        "wires": [
-            [
-                "b31c428b9a0cb4af"
-            ]
-        ]
-    },
-    {
-        "id": "ca904e5e7a2b462b",
-        "type": "http in",
-        "z": "6f8195080fb39706",
-        "g": "ec6f5aba8062c16d",
-        "name": "Get Trap",
-        "url": "/trapcodes2/:farmName",
-        "method": "get",
-        "upload": false,
-        "swaggerDoc": "",
-        "x": 120,
-        "y": 1100,
-        "wires": [
-            [
-                "aad4ff4f35b33c09"
-            ]
-        ]
-    },
-    {
-        "id": "cbe6a551b5b49262",
-        "type": "mysql",
-        "z": "6f8195080fb39706",
-        "g": "ec6f5aba8062c16d",
-        "mydb": "5f30eccca47cdb5f",
-        "name": "Consulta Traps",
-        "x": 560,
-        "y": 1100,
-        "wires": [
-            [
-                "ec0275f09ff38286"
-            ]
-        ]
-    },
-    {
-        "id": "ec0275f09ff38286",
-        "type": "function",
-        "z": "6f8195080fb39706",
-        "g": "ec6f5aba8062c16d",
-        "name": "Formatar Traps",
-        "func": "let traps = msg.payload.map(trap => ({ trapCode: trap.trapCode })); // Atualizado de areaName para trapName\n\nmsg.payload = traps;\nreturn msg;\n",
-        "outputs": 1,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 780,
-        "y": 1100,
-        "wires": [
-            [
-                "01b6c0a912e03257"
-            ]
-        ]
-    },
-    {
-        "id": "01b6c0a912e03257",
-        "type": "http response",
-        "z": "6f8195080fb39706",
-        "g": "ec6f5aba8062c16d",
-        "name": "",
-        "statusCode": "",
-        "headers": {},
-        "x": 970,
-        "y": 1100,
-        "wires": []
-    },
-    {
-        "id": "aad4ff4f35b33c09",
-        "type": "function",
-        "z": "6f8195080fb39706",
-        "g": "ec6f5aba8062c16d",
-        "name": "Definir Consulta SQL",
-        "func": "msg.topic = \"SELECT DISTINCT trapCode FROM detect WHERE TRIM(farmName) = ?\";\nmsg.payload = [msg.req.params.farmName.trim()]; // Adiciona trim() ao farmName\nreturn msg;\n",
-        "outputs": 1,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 340,
-        "y": 1100,
-        "wires": [
-            [
-                "cbe6a551b5b49262"
-            ]
-        ]
-    },
-    {
-        "id": "86db40fcd5d4c06e",
-        "type": "file in",
-        "z": "6f8195080fb39706",
-        "g": "ec6f5aba8062c16d",
-        "name": "",
-        "filename": "filename",
-        "filenameType": "msg",
-        "format": "utf8",
-        "chunk": false,
-        "sendError": false,
-        "encoding": "base64",
-        "allProps": false,
-        "x": 770,
-        "y": 1020,
-        "wires": [
-            [
-                "d4e5f67890a1b2c3"
-            ]
-        ]
-    },
-    {
-        "id": "652bcb92ab94d05f",
-        "type": "function",
-        "z": "6f8195080fb39706",
-        "g": "ec6f5aba8062c16d",
-        "name": "Preparar Caminho da Imagem",
-        "func": "if (msg.payload.length > 0) {\n    // Preserva os dados originais\n    msg.originalPayload = msg.payload;\n    \n    // Define o caminho da imagem baseado no URL do banco\n    msg.filename = '/home/otavio/.node-red/public'+ msg.payload[0].image_url;\n    \n    // Se o caminho não começar com '/', adiciona\n    if (!msg.filename.startsWith('/')) {\n        msg.filename = '/' + msg.filename;\n    }\n    \n    // Você pode adicionar um diretório base se necessário\n    // msg.filename = '/caminho/base' + msg.filename;\n}\nreturn msg;",
-        "outputs": 1,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 670,
-        "y": 980,
-        "wires": [
-            [
-                "86db40fcd5d4c06e"
-            ]
-        ]
-    },
-    {
-        "id": "729e980aba9900df",
-        "type": "group",
-        "z": "6f8195080fb39706",
-        "name": "Cadastra Traps",
-        "style": {
-            "label": true
-        },
-        "nodes": [
-            "5aaed931d95290bf",
-            "d1c2b3d8622de694",
-            "6e0ff581b926031c",
-            "043dc6896bd8c961",
-            "be0e8671a95e15fb",
-            "8b03040d8ca90759"
-        ],
-        "x": 34,
-        "y": 779,
-        "w": 972,
-        "h": 142
-    },
-    {
-        "id": "5aaed931d95290bf",
-        "type": "http in",
-        "z": "6f8195080fb39706",
-        "g": "729e980aba9900df",
-        "name": "",
-        "url": "/savetraps",
-        "method": "post",
-        "upload": false,
-        "swaggerDoc": "",
-        "x": 140,
-        "y": 820,
-        "wires": [
-            [
-                "d1c2b3d8622de694"
-            ]
-        ]
-    },
-    {
-        "id": "d1c2b3d8622de694",
-        "type": "function",
-        "z": "6f8195080fb39706",
-        "g": "729e980aba9900df",
-        "name": "Validar e Formatar",
-        "func": "if (!msg.payload.farmName || !msg.payload.trapCodes || !Array.isArray(msg.payload.trapCodes) || msg.payload.trapCodes.length === 0) {\n    msg.statusCode = 400;\n    msg.payload = { status: 'error', message: 'Nome da fazenda e uma lista de códigos de armadilhas são obrigatórios.' };\n    return [null, msg];\n}\n\nmsg.inserts = msg.payload.trapCodes.map(trapCode => {\n    return [msg.payload.farmName.trim(), trapCode.trim()];\n});\n\nmsg.topic = \"INSERT INTO traps (farmName, trapCode) VALUES ?\";\nmsg.payload = [msg.inserts];\n\nreturn [msg, null];\n",
-        "outputs": 2,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 350,
-        "y": 820,
-        "wires": [
-            [
-                "6e0ff581b926031c"
-            ],
-            [
-                "be0e8671a95e15fb"
-            ]
-        ]
-    },
-    {
-        "id": "6e0ff581b926031c",
-        "type": "mysql",
-        "z": "6f8195080fb39706",
-        "g": "729e980aba9900df",
-        "mydb": "5f30eccca47cdb5f",
-        "name": "Insert Trap",
-        "x": 570,
-        "y": 820,
-        "wires": [
-            [
-                "043dc6896bd8c961"
-            ]
-        ]
-    },
-    {
-        "id": "043dc6896bd8c961",
-        "type": "function",
-        "z": "6f8195080fb39706",
-        "g": "729e980aba9900df",
-        "name": "Enviar Resposta",
-        "func": "if (msg.error) {\n    if (msg.error.message.includes('Duplicate entry')) {\n        msg.statusCode = 409; // Conflict\n        msg.payload = { status: 'error', message: 'Armadilha já cadastrada.' };\n    } else {\n        msg.statusCode = 500; // Internal Server Error\n        msg.payload = { status: 'error', message: 'Erro ao cadastrar armadilha.' };\n    }\n} else if (msg.payload.affectedRows > 0) {\n    msg.statusCode = 200;\n    msg.payload = { status: 'success', message: 'Armadilha cadastrada com sucesso!' };\n} else {\n    msg.statusCode = 500;\n    msg.payload = { status: 'error', message: 'Erro ao cadastrar armadilha.' };\n}\n\nreturn msg;",
-        "outputs": 1,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 760,
-        "y": 820,
-        "wires": [
-            [
-                "be0e8671a95e15fb"
-            ]
-        ]
-    },
-    {
-        "id": "be0e8671a95e15fb",
-        "type": "http response",
-        "z": "6f8195080fb39706",
-        "g": "729e980aba9900df",
-        "name": "",
-        "statusCode": "",
-        "headers": {
-            "content-type": "application/json"
-        },
-        "x": 930,
-        "y": 820,
-        "wires": []
-    },
-    {
-        "id": "8b03040d8ca90759",
-        "type": "catch",
-        "z": "6f8195080fb39706",
-        "g": "729e980aba9900df",
-        "name": "Catch Errors",
-        "scope": [
-            "6e0ff581b926031c"
-        ],
-        "uncaught": false,
-        "x": 590,
-        "y": 880,
-        "wires": [
-            [
-                "043dc6896bd8c961"
-            ]
-        ]
+        "x": 8,
+        "y": 1173,
+        "w": 1864,
+        "h": 414
     },
     {
         "id": "1d046ba346aea790",
@@ -1645,7 +1777,8 @@
             "7817ea347f6923e8",
             "dd51d70d237108c7",
             "fb4b1f4abdd27cd7",
-            "5e46a6b2b7c1ee84"
+            "5e46a6b2b7c1ee84",
+            "96fef341fbd6b49e"
         ],
         "x": 34,
         "y": 1359,
@@ -1856,7 +1989,7 @@
         "z": "6f8195080fb39706",
         "g": "5a02a451e146d677",
         "name": "Enviar Resposta",
-        "func": "const req = global.get('req');\nconst res = global.get('res');\n\nif (msg.payload.error) {\n        msg.payload = {\n            status: 'error',\n            message: msg.payload.error\n        };\n        msg.statusCode = 409; \n    } else {\n        msg.payload = {\n            status: 'success',\n            message: 'Imagem cadastrada com sucesso!'\n        };\n        msg.req=req;\n        msg.res=res;\n        msg.statusCode = 200; \n    }\n\n    return msg;",
+        "func": "const req = global.get('req');\nconst res = global.get('res');\nconst object_count = global.get('object_count');\n\nif (msg.payload.error) {\n        msg.payload = {\n            status: 'error',\n            message: msg.payload.error\n        };\n        msg.statusCode = 409; \n    } else {\n        msg.payload = {\n            status: 'success',\n            message: 'Imagem cadastrada com sucesso!',\n            object_count:object_count\n        };\n        msg.req=req;\n        msg.res=res;\n        msg.statusCode = 200; \n    }\n\n    return msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -1867,7 +2000,8 @@
         "y": 1520,
         "wires": [
             [
-                "35c2684fc4f2d963"
+                "35c2684fc4f2d963",
+                "96fef341fbd6b49e"
             ]
         ]
     },
@@ -1937,7 +2071,7 @@
         "z": "6f8195080fb39706",
         "g": "5a02a451e146d677",
         "name": "Preparar Movimento da Imagem",
-        "func": "const farmName = global.get('farmName');\nconst trapCode = global.get('trapCode');\nconst object_count = global.get('object_count');\nconst timestamp = new Date().getTime();\n\n// Define diretórios e URLs\nconst destDir = '/home/otavio/.node-red/public/images/detect';\nconst baseUrl = '/images/detect';\nconst fileName = `${farmName}_${trapCode}.jpg`;\n\nmsg.moveOperation = {\n    sourcePath: '/home/otavio/.node-red/public/detect/predict/imagem.png',\n    destPath: `${destDir}/${fileName}`,\n    fileUrl: `${baseUrl}/${fileName}`\n};\n\n// Manter o object_count no payload\nmsg.payload = {\n    farmName: farmName,\n    trapCode: trapCode,\n    object_count: object_count,\n    image_url: msg.moveOperation.fileUrl\n};\n\nreturn msg;",
+        "func": "const farmName = global.get('farmName');\nconst trapCode = global.get('trapCode');\nconst object_count = global.get('object_count');\nconst timestamp = new Date().getTime();\n\n// Define diretórios e URLs\nconst destDir = '/home/otavio/.node-red/public/images/detect';\nconst baseUrl = '/images/detect';\nconst fileName = `${farmName}_${trapCode}.jpg`;\n\nmsg.moveOperation = {\n    sourcePath: '/home/otavio/.node-red/public/detect/predict/imagem.jpg',\n    destPath: `${destDir}/${fileName}`,\n    fileUrl: `${baseUrl}/${fileName}`\n};\n\n// Manter o object_count no payload\nmsg.payload = {\n    farmName: farmName,\n    trapCode: trapCode,\n    object_count: object_count,\n    image_url: msg.moveOperation.fileUrl\n};\n\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -1989,5 +2123,32 @@
             ],
             []
         ]
+    },
+    {
+        "id": "96fef341fbd6b49e",
+        "type": "debug",
+        "z": "6f8195080fb39706",
+        "g": "5a02a451e146d677",
+        "name": "debug 28",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1740,
+        "y": 1400,
+        "wires": []
+    },
+    {
+        "id": "5f30eccca47cdb5f",
+        "type": "MySQLdatabase",
+        "name": "",
+        "host": "localhost",
+        "port": "3306",
+        "db": "farm_db",
+        "tz": "",
+        "charset": "UTF8"
     }
 ]
